@@ -14,7 +14,7 @@ Note:
     You can restrict it setting pages to a desireable integer.
 
 """
-import requests
+import requests, re
 from bs4 import BeautifulSoup
 # NOTE: Beware that many sites may block your IP for botting.
 class Goods():
@@ -33,9 +33,9 @@ class Goods():
     """
 
     def __init__(self, name, price, url):
-        self.name = name.strip()
-        self.price = int(price.strip().replace(" ", "")[:-1])
-        self.url = url.strip()
+        self.name = name
+        self.price = int(price.replace(" ", "")[:-1])
+        self.url = url
 
 
     def get_good(self):
@@ -113,13 +113,18 @@ def retrieve_info(soup):
     catalog = []
     try:
         for product in soup.select("div.item_table-header"):
-            name = product.find('a').text
-            price = product.find('span').text
-            url = "https://www.avito.ru/" + product.a['href']
+            name = product.find('a').text.strip()
+            price = product.find('span').text.strip()
+            # Makes sure the price string actually contains digits.
+            if not re.match("\\d", price):
+                price = "0 Р"
+            url = ("https://www.avito.ru/" + product.a['href']).strip()
             item = Goods(name, price, url)
             catalog.append(item)
     except Exception:
         print("well that sucks")
+        with open("error.txt", 'w', encoding="UTF-16") as error_file:
+            error_file.write(str(price))
     return catalog
 
 
@@ -152,5 +157,5 @@ def main(base):
 
 
 if __name__ == "__main__":
-    BASE_URL = "avito.ru/amurskaya_oblast/igry_pristavki_i_programmy/igry_dlya_pristavok?p="
+    BASE_URL = "https://www.avito.ru/amurskaya_oblast/igry_pristavki_i_programmy/igry_dlya_pristavok?p="
     main(BASE_URL)
